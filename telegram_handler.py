@@ -30,8 +30,8 @@ async def monitor_channels(client):
             async for message in client.iter_messages(dialog.id):
                 print(f"[{dialog.name}] {message.date}: {message.text}")
 
-async def main(accounts, get_login_code):
-    """Log in to multiple accounts and monitor their channels."""
+async def main(accounts, get_login_code, monitor_channels_with_ui):
+    """Log in to multiple accounts and monitor their channels using a custom monitoring function."""
     clients = []
     for account in accounts:
         phone_number = account['Phone Number']
@@ -41,8 +41,8 @@ async def main(accounts, get_login_code):
         if client:
             clients.append(client)
 
-    # Monitor channels for all clients
-    await asyncio.gather(*(monitor_channels(client) for client in clients))
+    # Monitor channels for all clients using the custom monitoring function
+    await asyncio.gather(*(monitor_channels_with_ui(client) for client in clients))
 
 # Example usage (replace with actual data from Excel file)
 # accounts = [{'Phone Number': '+123456789', 'API_ID': '12345', 'API_HASH': 'abcde'}, {'Phone Number': '+987654321', 'API_ID': '67890', 'API_HASH': 'fghij'}]
