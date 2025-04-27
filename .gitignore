@@ -1,0 +1,19 @@
+# Ignore session files
+session_*.session
+
+# Ignore UserContacts.xlsx
+UserContacts.xlsx
+
+# Ignore Python cache files
+__pycache__/
+*.pyc
+
+# Ignore virtual environment
+venv/
+
+# Ignore system files
+.DS_Store
+Thumbs.db
+
+# Ignore temporary Excel files
+~$*.xlsx
