@@ -52,3 +52,37 @@ session_+91 9587763441.session-journal
 # Ignore all backup files
 *.bak
 # Ignore all swap files
+
+*.swp
+
+# Ignore build files
+*.build
+# Ignore distribution files
+*.dist
+# Ignore egg files
+*.egg
+# Ignore egg-info files
+*.egg-info
+# Ignore dist-info files
+*.dist-info
+# Ignore wheel files
+*.whl
+# Ignore cache files
+*.cache
+# Ignore coverage files
+*.coverage
+# Ignore test files
+*.test
+# Ignore test results
+*.test-results
+# Ignore test reports
+*.test-report
+# Ignore test coverage reports
+*.coverage-report
+# Ignore test coverage XML reports
+*.coverage.xml
+
+# ignore build folder
+build/
+# ignore dist folder
+dist/

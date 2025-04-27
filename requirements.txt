@@ -1,0 +1,5 @@
+pandas
+openpyxl
+telethon
+qasync
+python-docx
