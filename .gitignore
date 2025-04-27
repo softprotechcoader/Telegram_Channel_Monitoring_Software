@@ -20,3 +20,14 @@ Thumbs.db
 # Ignore temporary Word files
 ~$*.docx
 ~$*.doc
+# Ignore all excel files
+*.xlsx
+*.xls   
+*.xlsm
+*.xlsb
+*.xlsm
+*.xls
+*.xlsb
+*.xlsm
+*.xlsb
+*.xlsm
