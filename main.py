@@ -1,5 +1,5 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QFileDialog, QLabel, QVBoxLayout, QWidget, QInputDialog, QScrollArea, QTextEdit
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QFileDialog, QLabel, QVBoxLayout, QWidget, QInputDialog, QScrollArea, QTextEdit, QProgressBar
 from PyQt5.QtCore import Qt
 from excel_handler import generate_empty_excel, load_excel
 import asyncio
@@ -19,6 +19,10 @@ class TelegramAutomationApp(QMainWindow):
         self.label = QLabel("Select an Excel file or generate a new one.")
         layout.addWidget(self.label)
 
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setValue(0)
+        layout.addWidget(self.progress_bar)
+
         self.generate_button = QPushButton("Generate Empty Excel")
         self.generate_button.clicked.connect(self.generate_excel)
         layout.addWidget(self.generate_button)
@@ -35,9 +39,20 @@ class TelegramAutomationApp(QMainWindow):
         self.abort_button.clicked.connect(self.abort_process)
         layout.addWidget(self.abort_button)
 
-        self.export_button = QPushButton("Export to Excel")
-        self.export_button.clicked.connect(self.export_to_excel)
+        self.export_button = QPushButton("Export to Word")
+        self.export_button.clicked.connect(self.export_to_word)
         layout.addWidget(self.export_button)
+
+        self.latest_content_label = QLabel("No of latest content:")
+        layout.addWidget(self.latest_content_label)
+
+        self.latest_content_input = QTextEdit()
+        self.latest_content_input.setFixedHeight(30)
+        layout.addWidget(self.latest_content_input)
+
+        self.read_button = QPushButton("Read")
+        self.read_button.clicked.connect(self.read_latest_content)
+        layout.addWidget(self.read_button)
 
         # Scrollable area for displaying content
         self.scroll_area = QScrollArea()
@@ -85,15 +100,18 @@ class TelegramAutomationApp(QMainWindow):
         self.abort_flag = True
         self.label.setText("Process aborted.")
 
-    def export_to_excel(self):
+    def export_to_word(self):
         options = QFileDialog.Options()
-        file_path, _ = QFileDialog.getSaveFileName(self, "Export Excel File", "", "Excel Files (*.xlsx)", options=options)
+        file_path, _ = QFileDialog.getSaveFileName(self, "Export Word File", "", "Word Files (*.docx)", options=options)
         if file_path:
-            # Prepare data for export
-            data_by_date = {}
-            channel_names = set()
+            from docx import Document
+
+            # Create a new Word document
+            doc = Document()
+            doc.add_heading("Telegram Channel Content", level=1)
 
             # Organize content by date and channel
+            data_by_date = {}
             for entry in self.channel_content:
                 date = entry["Date"].date() if isinstance(entry["Date"], pd.Timestamp) else entry["Date"]
                 channel_name = entry["Channel Name"]
@@ -102,27 +120,32 @@ class TelegramAutomationApp(QMainWindow):
                 if date not in data_by_date:
                     data_by_date[date] = {}
                 data_by_date[date][channel_name] = content
-                channel_names.add(channel_name)
 
-            # Sort dates and channels
-            sorted_dates = sorted(data_by_date.keys())
-            sorted_channels = sorted(channel_names)
+            # Write data to the Word document
+            for date, channels in sorted(data_by_date.items()):
+                doc.add_heading(str(date), level=2)
+                for channel, content in channels.items():
+                    doc.add_paragraph(f"Channel: {channel}")
+                    doc.add_paragraph(f"Content: {content}")
+                    doc.add_paragraph("---")
 
-            # Create a DataFrame for export
-            export_data = []
-            for date in sorted_dates:
-                row = {"DATE": date}
-                for channel in sorted_channels:
-                    row[channel] = data_by_date[date].get(channel, "No Content")
-                export_data.append(row)
-
-            df = pd.DataFrame(export_data, columns=["DATE"] + sorted_channels)
-
-            # Export to Excel
-            df.to_excel(file_path, index=False)
+            # Save the Word document
+            doc.save(file_path)
             self.label.setText(f"Content exported to: {file_path}")
 
-    async def run_telegram_automation(self):
+    def read_latest_content(self):
+        try:
+            n = int(self.latest_content_input.toPlainText().strip())
+            if n <= 0:
+                self.label.setText("Please enter a positive number.")
+                return
+            self.label.setText(f"Reading last {n} contents from all channels...")
+            loop = asyncio.get_event_loop()
+            loop.create_task(self.run_telegram_automation(last_n=n))
+        except ValueError:
+            self.label.setText("Invalid input. Please enter a valid number.")
+
+    async def run_telegram_automation(self, last_n=None):
         async def get_login_code(phone_number):
             code, ok = QInputDialog.getText(self, "Login Code", f"Enter the login code for {phone_number}:")
             if ok and code:
@@ -131,17 +154,27 @@ class TelegramAutomationApp(QMainWindow):
                 return None
 
         async def monitor_channels_with_ui(client):
+            total_channels = 0
+            processed_channels = 0
+
+            async for dialog in client.iter_dialogs():
+                if dialog.is_channel:
+                    total_channels += 1
+
             async for dialog in client.iter_dialogs():
                 if dialog.is_channel:
                     self.text_display.append(f"Monitoring channel: {dialog.name}")
-                    async for message in client.iter_messages(dialog.id):
+                    async for message in client.iter_messages(dialog.id, limit=last_n):
                         if self.abort_flag:
                             return
                         content = f"[{dialog.name}] {message.date}: {message.text}"
                         self.text_display.append(content)
                         self.channel_content.append({"Date": message.date, "Channel Name": dialog.name, "Content": message.text})
+                    processed_channels += 1
+                    self.progress_bar.setValue(int((processed_channels / total_channels) * 100))
 
         await telegram_main(self.accounts, get_login_code, monitor_channels_with_ui)
+        self.label.setText("Work completed successfully!")
 
 if __name__ == "__main__":
     app = QAsyncApplication(sys.argv)
