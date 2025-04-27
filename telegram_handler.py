@@ -1,13 +1,9 @@
 from telethon import TelegramClient
 import asyncio
 
-# Define constants for the Telegram API
-API_ID = '29844383'  # Replace with your Telegram API ID
-API_HASH = 'de3cc48c49de957cbc533bc22d9004b7'  # Replace with your Telegram API Hash
-
-async def login_account(phone_number, get_login_code):
-    """Log in to a Telegram account using the provided phone number and a callback for the login code."""
-    client = TelegramClient(f'session_{phone_number}', API_ID, API_HASH)
+async def login_account(phone_number, api_id, api_hash, get_login_code):
+    """Log in to a Telegram account using the provided phone number, API_ID, API_HASH, and a callback for the login code."""
+    client = TelegramClient(f'session_{phone_number}', api_id, api_hash)
     await client.connect()
 
     if not await client.is_user_authorized():
@@ -38,7 +34,9 @@ async def main(accounts, get_login_code):
     clients = []
     for account in accounts:
         phone_number = account['Phone Number']
-        client = await login_account(phone_number, get_login_code)
+        api_id = account['API_ID']
+        api_hash = account['API_HASH']
+        client = await login_account(phone_number, api_id, api_hash, get_login_code)
         if client:
             clients.append(client)
 
@@ -46,7 +44,7 @@ async def main(accounts, get_login_code):
     await asyncio.gather(*(monitor_channels(client) for client in clients))
 
 # Example usage (replace with actual data from Excel file)
-# accounts = [{'Phone Number': '+123456789'}, {'Phone Number': '+987654321'}]
+# accounts = [{'Phone Number': '+123456789', 'API_ID': '12345', 'API_HASH': 'abcde'}, {'Phone Number': '+987654321', 'API_ID': '67890', 'API_HASH': 'fghij'}]
 # async def get_login_code(phone_number):
 #     return input(f"Enter the code for {phone_number}: ")
 # asyncio.run(main(accounts, get_login_code))
