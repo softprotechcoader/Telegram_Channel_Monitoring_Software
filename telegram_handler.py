@@ -23,11 +23,12 @@ async def login_account(phone_number, api_id, api_hash, get_login_code):
     return client
 
 async def monitor_channels(client):
-    """Monitor all channels the user is subscribed to."""
+    """Monitor all channels the user is subscribed to and read their content."""
     async for dialog in client.iter_dialogs():
         if dialog.is_channel:
             print(f"Monitoring channel: {dialog.name}")
-            # Add logic to handle new messages or content here
+            async for message in client.iter_messages(dialog.id):
+                print(f"[{dialog.name}] {message.date}: {message.text}")
 
 async def main(accounts, get_login_code):
     """Log in to multiple accounts and monitor their channels."""
