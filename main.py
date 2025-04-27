@@ -1,6 +1,7 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QFileDialog, QLabel, QVBoxLayout, QWidget, QInputDialog, QScrollArea, QTextEdit, QProgressBar
+from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton, QFileDialog, QLabel, QVBoxLayout, QHBoxLayout, QWidget, QInputDialog, QScrollArea, QTextEdit, QProgressBar
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
 from excel_handler import generate_empty_excel, load_excel
 import asyncio
 from telegram_handler import main as telegram_main
@@ -13,46 +14,74 @@ class TelegramAutomationApp(QMainWindow):
         self.setWindowTitle("Telegram Automation")
         self.setGeometry(100, 100, 800, 600)  # Adjusted for responsiveness
 
+        # Set Telegram Automation icon
+        self.setWindowIcon(QIcon("telegram_icon.png"))
+
         # Layout and widgets
-        layout = QVBoxLayout()
+        main_layout = QVBoxLayout()
 
-        self.label = QLabel("Select an Excel file or generate a new one.")
-        layout.addWidget(self.label)
-
-        self.progress_bar = QProgressBar()
-        self.progress_bar.setValue(0)
-        layout.addWidget(self.progress_bar)
-
+        # Row 1: Generate Empty Excel and Load Excel File
+        row1_layout = QHBoxLayout()
         self.generate_button = QPushButton("Generate Empty Excel")
-        self.generate_button.clicked.connect(self.generate_excel)
-        layout.addWidget(self.generate_button)
+        self.generate_button.setFixedSize(150, 30)
+        self.generate_button.setStyleSheet("margin-left: 10px;")
+        row1_layout.addWidget(self.generate_button, alignment=Qt.AlignLeft)
 
         self.load_button = QPushButton("Load Excel File")
-        self.load_button.clicked.connect(self.load_excel_file)
-        layout.addWidget(self.load_button)
+        self.load_button.setFixedSize(150, 30)
+        self.load_button.setStyleSheet("margin-right: 10px;")
+        row1_layout.addWidget(self.load_button, alignment=Qt.AlignRight)
 
+        main_layout.addLayout(row1_layout)
+
+        # Row 2: Start Automation (centered)
         self.start_button = QPushButton("Start Automation")
-        self.start_button.clicked.connect(self.start_automation)
-        layout.addWidget(self.start_button)
+        self.start_button.setFixedSize(200, 40)  # Medium size
+        self.start_button.setStyleSheet("font-size: 14px; font-weight: bold;")
+        main_layout.addWidget(self.start_button, alignment=Qt.AlignCenter)
 
-        self.abort_button = QPushButton("Abort Process")
-        self.abort_button.clicked.connect(self.abort_process)
-        layout.addWidget(self.abort_button)
-
-        self.export_button = QPushButton("Export to Word")
-        self.export_button.clicked.connect(self.export_to_word)
-        layout.addWidget(self.export_button)
+        # Row 3: No of latest content and Read button
+        row3_layout = QHBoxLayout()
+        row3_layout.setSpacing(0)  # Remove spacing between widgets
 
         self.latest_content_label = QLabel("No of latest content:")
-        layout.addWidget(self.latest_content_label)
+        self.latest_content_label.setStyleSheet("margin-left: 10px;")
+        row3_layout.addWidget(self.latest_content_label, alignment=Qt.AlignLeft)
 
         self.latest_content_input = QTextEdit()
         self.latest_content_input.setFixedHeight(30)
-        layout.addWidget(self.latest_content_input)
+        self.latest_content_input.setFixedWidth(250)
+        row3_layout.addWidget(self.latest_content_input, alignment=Qt.AlignLeft)
 
         self.read_button = QPushButton("Read")
-        self.read_button.clicked.connect(self.read_latest_content)
-        layout.addWidget(self.read_button)
+        self.read_button.setFixedSize(100, 30)
+        row3_layout.addWidget(self.read_button, alignment=Qt.AlignLeft)
+
+        main_layout.addLayout(row3_layout)
+
+        # Row 4: Abort and Export to Word
+        row4_layout = QHBoxLayout()
+        self.abort_button = QPushButton("Abort")
+        self.abort_button.setFixedSize(100, 30)
+        self.abort_button.setStyleSheet("margin-left: 10px;")
+        row4_layout.addWidget(self.abort_button, alignment=Qt.AlignLeft)
+
+        self.export_button = QPushButton("Export to Word")
+        self.export_button.setFixedSize(150, 30)
+        self.export_button.setStyleSheet("margin-right: 10px;")
+        row4_layout.addWidget(self.export_button, alignment=Qt.AlignRight)
+
+        main_layout.addLayout(row4_layout)
+
+        # Progress bar
+        self.progress_bar = QProgressBar()
+        self.progress_bar.setValue(0)
+        main_layout.addWidget(self.progress_bar)
+
+        # Status label
+        self.label = QLabel("Status: Ready")
+        self.label.setStyleSheet("font-size: 12px; color: blue;")
+        main_layout.addWidget(self.label)
 
         # Scrollable area for displaying content
         self.scroll_area = QScrollArea()
@@ -60,15 +89,23 @@ class TelegramAutomationApp(QMainWindow):
         self.text_display = QTextEdit()
         self.text_display.setReadOnly(True)
         self.scroll_area.setWidget(self.text_display)
-        layout.addWidget(self.scroll_area)
+        main_layout.addWidget(self.scroll_area)
 
         container = QWidget()
-        container.setLayout(layout)
+        container.setLayout(main_layout)
         self.setCentralWidget(container)
 
         self.accounts = None
         self.abort_flag = False
         self.channel_content = []
+
+        # Connect buttons to their respective functions
+        self.generate_button.clicked.connect(self.generate_excel)
+        self.load_button.clicked.connect(self.load_excel_file)
+        self.start_button.clicked.connect(self.start_automation)
+        self.abort_button.clicked.connect(self.abort_process)
+        self.export_button.clicked.connect(self.export_to_word)
+        self.read_button.clicked.connect(self.read_latest_content)
 
     def generate_excel(self):
         options = QFileDialog.Options()
@@ -98,7 +135,13 @@ class TelegramAutomationApp(QMainWindow):
 
     def abort_process(self):
         self.abort_flag = True
-        self.label.setText("Process aborted.")
+        self.label.setText("Process aborted. Resetting tool...")
+
+        # Reset UI components but keep the loaded accounts
+        self.progress_bar.setValue(0)
+        self.text_display.clear()
+        self.channel_content = []
+        self.label.setText("Tool reset. Ready for new actions.")
 
     def export_to_word(self):
         options = QFileDialog.Options()
@@ -139,6 +182,7 @@ class TelegramAutomationApp(QMainWindow):
             if n <= 0:
                 self.label.setText("Please enter a positive number.")
                 return
+            self.abort_flag = False  # Reset abort flag
             self.label.setText(f"Reading last {n} contents from all channels...")
             loop = asyncio.get_event_loop()
             loop.create_task(self.run_telegram_automation(last_n=n))

@@ -1,10 +1,23 @@
 from telethon import TelegramClient
 import asyncio
+import sqlite3
 
 async def login_account(phone_number, api_id, api_hash, get_login_code):
     """Log in to a Telegram account using the provided phone number, API_ID, API_HASH, and a callback for the login code."""
     client = TelegramClient(f'session_{phone_number}', api_id, api_hash)
-    await client.connect()
+
+    for attempt in range(5):  # Retry up to 5 times
+        try:
+            await client.connect()
+            break
+        except sqlite3.OperationalError as e:
+            if "database is locked" in str(e):
+                print(f"Database is locked. Retrying... (Attempt {attempt + 1}/5)")
+                await asyncio.sleep(1)  # Wait for 1 second before retrying
+            else:
+                raise
+    else:
+        raise sqlite3.OperationalError("Failed to connect after 5 attempts due to database lock.")
 
     if not await client.is_user_authorized():
         try:

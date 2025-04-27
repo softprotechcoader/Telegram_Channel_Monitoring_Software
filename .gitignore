@@ -15,6 +15,16 @@ venv/
 .DS_Store
 Thumbs.db
 
+# Ignore word files
+*.docx
+*.doc
+*.docm
+*.dotx
+*.dot
+
+
+
+
 # Ignore temporary Excel files
 ~$*.xlsx
 # Ignore temporary Word files
@@ -31,3 +41,14 @@ Thumbs.db
 *.xlsm
 *.xlsb
 *.xlsm
+# ignore all session files
+session_*.session
+session_+91 9587763441.session-journal
+# Ignore all temporary files
+*.tmp
+*.temp
+# Ignore all log files
+*.log
+# Ignore all backup files
+*.bak
+# Ignore all swap files
